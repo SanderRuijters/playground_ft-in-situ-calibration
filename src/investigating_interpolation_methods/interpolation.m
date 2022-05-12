@@ -1,5 +1,5 @@
 clear; close all;
-%% LOAD 3 DATASETS LOGGED FROM SEVERAL EXPERIMENTS
+%% LOAD DATASETS LOGGED FROM SEVERAL EXPERIMENTS
 
 % List .mat files in folder
 print_directory = false;
@@ -12,8 +12,8 @@ addpath(genpath('../../../logged_data/'))
 % logged_file = 'robot_logger_device_2022_05_04_15_10_44'; % 23195 23196 23196 23196 23196 23197 23197 23200 23201
 % logged_file = 'robot_logger_device_2022_05_04_15_13_29'; %X 6486 6485 6485 6485 6485 6484 6484 6481 6480
 % logged_file = 'robot_logger_device_2022_05_04_16_00_30'; % 15894 15894 15894 15894 15894 15894 15894 15894 15894
-logged_file = 'robot_logger_device_2022_05_04_16_36_25'; %X 23609 23610 23610 23610 23610 23610 23611 23613 23614
-% logged_file = 'robot_logger_device_2022_05_04_16_39_15'; %X 6710 6709 6709 6709 6709 6708 6708 6706 6705
+% logged_file = 'robot_logger_device_2022_05_04_16_36_25'; %X 23609 23610 23610 23610 23610 23610 23611 23613 23614
+logged_file = 'robot_logger_device_2022_05_04_16_39_15'; %X 6710 6709 6709 6709 6709 6708 6708 6706 6705
 load(logged_file);
 
 
@@ -29,16 +29,17 @@ data_field_names.joint_states = fieldnames(robot_logger_device.joints_state);
 for i=1:size(data_field_names.ft_names_yarp,1)
     ft_data_dimensions(i,:,:,:) = robot_logger_device.FTs.(data_field_names.ft_names_yarp{i}).dimensions; %#ok<*SAGROW> 
 end
+
+% % Print result
 % ft_data_dimensions
+
 % Loop through and save joint state dimensions
 for i = 1:size(data_field_names.joint_states,1)
     joint_state_dimensions(i,:,:,:) = robot_logger_device.joints_state.(data_field_names.joint_states{i}).dimensions;
 end
+
+% % Print result
 % joint_state_dimensions
-% % Required to extract:
-% robot_logger_device.joints_state.positions.timestamps
-% robot_logger_device.joints_state.positions.data
-% robot_logger_device.joints_state.velocities.data
 
 
 %% ANALYZE TIMESTAMPS
@@ -71,21 +72,50 @@ timestamps_cell = struct2cell(timestamps);
 % Loop to find sizes of timestamps
 for i = 1:size(timestamps_cell,1)
     timestamp_sizes(i) = size(timestamps_cell{i},2);
-    timestamp_min_values(i) = min(timestamps_cell{i});
-    timestamp_max_values(i) = max(timestamps_cell{i});
+    timestamp_start_values(i) = min(timestamps_cell{i});
+    timestamp_end_values(i) = max(timestamps_cell{i});
 end
-timestamps_min = min(timestamp_min_values);
-timestamps_max = max(timestamp_max_values);
-timestamps_difference = timestamps_max - timestamps_min;
 
-desired_timestamp_delta = 0.025;
-num_new_timestamp_points = timestamps_difference / desired_timestamp_delta;
-new_timestamps = timestamps_min:desired_timestamp_delta:timestamps_min+timestamps_max*desired_timestamp_delta;
+% Compute min and max start value
+timestamps_min_start_value = min(timestamp_start_values);
+timestamps_max_start_value = max(timestamp_start_values);
 
-% Minimum timestamp size
+% Compute min and max end value
+timestamps_min_end_value = min(timestamp_end_values);
+timestamps_max_end_value = max(timestamp_end_values);
+
+% Compute minimum timestamp size and print it
 min_timestamp_size = min(timestamp_sizes);
 sprintf('Minimum timestamp sizes = %d',min_timestamp_size)
 sprintf('%d ',timestamp_sizes)
+
+%% Compute desired timestamp vector
+
+% Get info from original timestamps
+desired_timestamps_min = timestamps_min_end_value;
+desired_timestamps_max = timestamps_max_start_value;
+
+% Defined desired sample rate 
+interpolation_timestamp_delta = 0.025;
+
+% Compute characteristics of desired timestamps vector
+desired_timestamps_max_difference = desired_timestamps_min - desired_timestamps_max;
+num_new_timestamp_points = floor(desired_timestamps_max_difference / interpolation_timestamp_delta);
+desired_timestamps_start = desired_timestamps_min;
+desired_timestamps_end = desired_timestamps_min+interpolation_timestamp_delta*num_new_timestamp_points;
+
+% Compute expected differece and amount the vector is shortened
+desired_timestamps_difference = desired_timestamps_end - desired_timestamps_start;
+desired_timestamps_shortened = desired_timestamps_max_difference - desired_timestamps_difference;
+
+% Construct desired timestamps vector
+interpolation_timestamps_vector = linspace(desired_timestamps_start,desired_timestamps_end,num_new_timestamp_points);
+
+% Investigate correctness of desired timestamps vector
+desired_timestamps_vector_start = min(interpolation_timestamps_vector);
+desired_timestamps_vector_end = max(interpolation_timestamps_vector);
+desired_timestamps_start_error = desired_timestamps_start - desired_timestamps_vector_start;
+desired_timestamps_end_error = desired_timestamps_end - desired_timestamps_vector_end;
 
 
 %% ANALYZE SIMILARITY OF MATRICES
@@ -103,7 +133,7 @@ for i = 1:size(timestamps_cell,1)
     end
     diff_cell{i} = diff(timestamps_cell{i});
     mean_diff_cell{i} = mean(diff_cell{i});
-    normalized_timestamps_cell{i} = timestamps_cell{i}-repmat(timestamps_cell{i}(1),1,size(timestamps_cell{i},2));
+    normalized_timestamps_cell{i} = timestamps_cell{i}-repmat(timestamps_cell{1}(1),1,size(timestamps_cell{i},2));
 end
 diff_cell
 normalized_timestamps_cell
@@ -113,22 +143,82 @@ equal_matrix
 sprintf('Matrix is filled with ones = %d',min(min(equal_matrix)))
 
 
+%% PERFORM INTERPOLATION
+
+% Preallocate, fill and convert to cell
+raw_data_struct.FT1 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{1}).data;
+raw_data_struct.FT2 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{2}).data;
+raw_data_struct.FT3 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{3}).data;
+raw_data_struct.joints_state_pos = robot_logger_device.joints_state.(data_field_names.joint_states{4}).data;
+raw_data_cell = struct2cell(raw_data_struct);
+
+% Preallocate, fill and convert to cell
+raw_timestamps_struct.FT1 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{1}).timestamps;
+raw_timestamps_struct.FT2 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{2}).timestamps;
+raw_timestamps_struct.FT3 = robot_logger_device.FTs.(data_field_names.ft_names_yarp{3}).timestamps;
+raw_timestamps_struct.joints_state_pos = robot_logger_device.joints_state.(data_field_names.joint_states{4}).timestamps;
+raw_timestamps_cell = struct2cell(raw_timestamps_struct);
+
+% Loop to find sizes of timestamps
+for i = 1:size(raw_timestamps_cell,1)
+    raw_timestamps_cell_start_values(i) = min(raw_timestamps_cell{i});
+    raw_timestamps_cell_end_values(i) = max(raw_timestamps_cell{i});
+end
+
+% Compute start and end value
+raw_timestamps_cell_max_start_value = max(raw_timestamps_cell_start_values);
+raw_timestamps_cell_min_end_value = min(raw_timestamps_cell_end_values);
+
+% Defined desired sample rate 
+interpolation_timestamp_delta = 0.025;
+
+% Compute characteristics of desired timestamps vector
+interpolation_timestamps_max_difference = raw_timestamps_cell_min_end_value - raw_timestamps_cell_max_start_value;
+num_new_interpolation_timestamp_points = floor(interpolation_timestamps_max_difference / interpolation_timestamp_delta);
+interpolation_timestamps_start = raw_timestamps_cell_min_end_value;
+interpolation_timestamps_end = raw_timestamps_cell_min_end_value+interpolation_timestamp_delta*num_new_interpolation_timestamp_points;
+
+% Construct desired timestamps vector
+interpolation_timestamps_vector = linspace(interpolation_timestamps_start,interpolation_timestamps_end,num_new_timestamp_points+1);
+
+% Preallocate before loop
+interpolated_data_cell = cell(3,1);
+ft_interpolated = zeros(size(raw_data_cell{1},1),size(raw_data_cell{1},2),size(raw_data_cell{1},3));
+
+% Interpolate FTs
+for i = 1:size(raw_timestamps_cell,1)-1 % 1:2
+    timestamps_vector = raw_timestamps_cell{i};
+    for j = 1:size(raw_data_cell{i},1) % 1:6
+        ft_vector = reshape(raw_data_cell{i}(j,:,:),1,[]);
+        ft_interpolated = reshape(interp1(timestamps_vector,ft_vector,interpolation_timestamps_vector,'spline'),1,1,[]);
+        fts_interpolated(j,1,:) = ft_interpolated;
+    end
+    interpolated_data_cell{i} = ft_interpolated;
+end
+
+% x = ; % timestamps vector
+% v = ; % variable vector
+% xq = desired_timestamps_vector; % interpolate and resample
+% vq = interp1(x,v,xq);
+
+
 %% PLOT
-end_data_point = 200;
 
-figure
-plot(timestamps_cell{1})
-hold on
-plot(timestamps_cell{3})
-hold off
-xlim([0 end_data_point])
-
-figure
-plot(diff_cell{1})
-hold on
-plot(diff_cell{3})
-hold off
-xlim([0 end_data_point])
+% end_data_point = 200;
+% 
+% figure
+% plot(timestamps_cell{1})
+% hold on
+% plot(timestamps_cell{3})
+% hold off
+% xlim([0 end_data_point])
+% 
+% figure
+% plot(diff_cell{1})
+% hold on
+% plot(diff_cell{3})
+% hold off
+% xlim([0 end_data_point])
 
 
 %% TEST WITH STRUCT2CELL
