@@ -1,5 +1,4 @@
-clear; 
-close all;
+clear; close all;
 %% LOAD DATASETS LOGGED FROM SEVERAL EXPERIMENTS
 
 % List .mat files in folder
@@ -182,40 +181,26 @@ interpolation_timestamps_end = interpolation_timestamps_start+interpolation_time
 % Construct desired timestamps vector
 interpolation_timestamps_vector = linspace(interpolation_timestamps_start,interpolation_timestamps_end,num_new_timestamp_points+1);
 
-% Preallocate before loops
-interpolated_data_cell = cell(4,1);
+% Preallocate before loop
+interpolated_data_cell = cell(3,1);
 
 % Interpolate FTs
-for i = 1:3
+for i = 1:2
     timestamps_vector = raw_timestamps_cell{i};
     for j = 1:size(raw_data_cell{i},1) % 1:6
         raw_data_ft = raw_data_cell{i}(j,:,:);
         ft_vector = reshape(raw_data_ft,1,[]);
-        ft_interpolated_temp1 = interp1(timestamps_vector,ft_vector,interpolation_timestamps_vector,'linear');
-        ft_interpolated_temp2 = reshape(ft_interpolated_temp1,1,1,[]);
-        ft_interpolated(j,1,:) = ft_interpolated_temp2;
+        ft_interpolated_temp = interp1(timestamps_vector,ft_vector,interpolation_timestamps_vector);
+        ft_interpolated = reshape(ft_interpolated_temp,1,1,[]);
+        fts_interpolated(j,1,:) = ft_interpolated;
         figure
-        plot(timestamps_vector',ft_vector',interpolation_timestamps_vector',ft_interpolated_temp1')
-        legend('original FT','interpolated FT');
-    end    
-    interpolated_data_cell{i} = ft_interpolated;
+        plot(ft_vector, timestamps_vector, )
+    end
+    interpolated_data_cell{i} = fts_interpolated;
 end
 
-% Interpolate joints_state_pos
-for i = 4
-    timestamps_vector = raw_timestamps_cell{i};
-    for j = 1:size(raw_data_cell{i},1) % 1:26
-        raw_data_states = raw_data_cell{i}(j,:,:);
-        state_vector = reshape(raw_data_states,1,[]);
-        state_interpolated_temp1 = interp1(timestamps_vector,state_vector,interpolation_timestamps_vector,'linear');
-        state_interpolated_temp2 = reshape(state_interpolated_temp1,1,1,[]);
-        states_interpolated(j,1,:) = state_interpolated_temp2;
-        figure
-        plot(timestamps_vector',state_vector',interpolation_timestamps_vector',state_interpolated_temp1')
-        legend('original state','interpolated state');
-    end
-    interpolated_data_cell{i} = states_interpolated;
-end
+% Plot results of interpolation
+
 
 
 %% PLOT
