@@ -13,13 +13,13 @@ load([results_directory,result_name,'.mat']')
 % Select FT-sensor
 FT_sensor = 'id_r_upper_arm_strain';
 
-% Shorten data
-realWrench = squeeze(robot_logger_device.FTs.id_r_upper_arm_strain.data);
-realWrench = realWrench(:,1:20);
-
 % Choose number of wrenches and datapoints
 nWrenches = 6;
 nDataPoints = 20;
+
+% Shorten data
+realWrench = squeeze(robot_logger_device.FTs.id_r_upper_arm_strain.data);
+realWrench = realWrench(:,1:nDataPoints);
 
 % Generate random data
 randomWrench = rand(nWrenches, nDataPoints);
