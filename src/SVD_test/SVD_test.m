@@ -3,6 +3,7 @@
 % Clear and close
 clear
 close all
+clc
 
 % Location of dataset
 results_directory = '../../../element_ft-insitu-calibration/src/data/experiment_data/';
@@ -25,12 +26,12 @@ realWrench = realWrench(:,1:nDataPoints);
 randomWrench = rand(nWrenches, nDataPoints);
 
 % Generate random data
-wrench = realWrench;
+X = realWrench
 
 % Normal SVD
-[U,S,V] = svd(wrench)
+[U,S,V] = svd(X)
 
 % Economy SVD
-[Ue,Se,Ve] = svd(wrench,'econ')
+[Ue,Se,Ve] = svd(X,'econ')
 
 
