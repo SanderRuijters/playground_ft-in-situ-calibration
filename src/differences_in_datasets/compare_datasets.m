@@ -5,12 +5,11 @@ clear
 close all
 % clc
 
-% Datasets cell
-dataset_names = {'TEST_A_parsed'; 'TEST_B_parsed'; 'TEST_C_parsed'; 'TEST_D_parsed'};
 
 %% Collect datasets
 
 % Loop through datasets
+dataset_names = {'TEST_A_parsed'; 'TEST_B_parsed'; 'TEST_C_parsed'; 'TEST_D_parsed'};
 for i = 1:length(dataset_names)
 
     % Load dataset
@@ -29,37 +28,137 @@ end
 
 %% Compute errors
 
-% Expected FTs errors
-comparison_timestamps = data_to_compare.timestamps.TEST_C_parsed;
+% Reference indexes and real indexes
+reference_indexes = [1 3];
+real_indexes = [2 4];
 
-% Loop through datasets
-for i = 1:length(dataset_names)
+% Loop through normal and interpolated datasets
+comparison_names = {'normal'; 'interpolated'};
+for i = 1:length(comparison_names)
+
+    % Save reference values to variable
+    reference_index = reference_indexes(i);
+    expected_reference = data_to_compare.expected.(dataset_names{reference_index});
+    measured_reference = data_to_compare.measured.(dataset_names{reference_index});
     
-    % Loop through timestamps
-    for j = 1:length(comparison_timestamps)
-        
-        % Loop through 6 wrenches
-        for k = 1:6
+    % Save real values to variable
+    real_index = real_indexes(i);
+    expected_real = data_to_compare.expected.(dataset_names{real_index});
+    measured_real = data_to_compare.measured.(dataset_names{real_index});
+    
+    % Compute errors
+    expected_error = expected_real - expected_reference;
+    measured_error = measured_real - measured_reference;
+    
+    % Save timestamps to variable
+    timestamps = data_to_compare.timestamps.(dataset_names{reference_index});
 
-            % Save reference value to variable
-            expected_reference = data_to_compare.expected.(dataset_names{1})(:,k); % Nx1
-            measured_reference = data_to_compare.expected.(dataset_names{1})(:,k); % Nx1
-
-            % Save real value to variable
-            expected_real = data_to_compare.expected.(dataset_names{i})(:,k); % Nx1
-            measured_real = data_to_compare.expected.(dataset_names{i})(:,k); % Nx1
-
-            % Compute error
-            expected_error = expected_real - expected_reference; % Nx1
-
-        end
-        
-    end
-
-    % Save error to struct
-    errors.measured.(dataset_names{i}) = expected_error;
-    errors.expected.(dataset_names{i}) = measured_error;
+    % Save errors and timestamps to struct
+    errors.(comparison_names{i}).expected = expected_error;
+    errors.(comparison_names{i}).measured = measured_error;
+    errors.(comparison_names{i}).timestamps = timestamps;
 
 end
 
-%% Plot results
+
+%% Plot all wrenches
+
+% Create tiled layout for measured FTs
+fig = figure;
+fig.Position = [0 0 1000 800];
+tiledlayout(3,2);
+
+% Create variable for axis labels
+yaxis_labels = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
+
+% Loop through wrenches
+ft_order = [1 4 2 5 3 6];
+for i = 1:length(ft_order)
+
+    % Plot in next tile
+    nexttile
+
+    % Loop through 4 datasets
+    for j = 1:length(dataset_names)
+
+        % Offset timestamps and save it to variable
+        uncorrected_timestamps = data_to_compare.timestamps.(dataset_names{j});
+        offset_timestamps = uncorrected_timestamps(1);
+        timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
+
+        % Save wrench to variable
+        wrench = data_to_compare.measured.(dataset_names{j})(:,ft_order(i));
+
+        % Plot wrench vs timestamp
+        plot(timestamps,wrench)
+
+        % Hold on for next dataset
+        hold on
+
+        % Legend and axis labels
+        legend show
+        ylabel(yaxis_labels{i})
+        xlabel('time')
+        legend(dataset_names, 'Interpreter','none')
+
+    end
+
+end
+
+close all
+%% Plot errors
+
+% Create variable for axis labels
+yaxis_labels = {'error'; 'error'; 'error'; 'error'; 'error'; 'error'};
+title_entries = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
+
+% Loop through measured and expected
+wrenches_names = fieldnames(errors.(comparison_names{1}));
+wrenches_names = wrenches_names(1:2,:);
+for i = 1:length(wrenches_names)
+
+    % Create tiled layout for measured FTs
+    fig = figure;
+    fig.Position = [0 0 1000 800];
+    tit = tiledlayout(3,2);
+
+    % Loop through wrenches
+    ft_order = [1 4 2 5 3 6];
+    for j = 1:length(ft_order)
+    
+        % Plot in next tile
+        nexttile
+    
+        % Loop through normal and interpolated
+        for k = 1:length(comparison_names)
+    
+            % Offset timestamps and save it to variable
+            uncorrected_timestamps = errors.(comparison_names{k}).timestamps;
+            offset_timestamps = uncorrected_timestamps(1);
+            timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
+    
+            % Save error to variable
+            error = errors.(comparison_names{k}).(wrenches_names{i})(:,ft_order(j));
+    
+            % Plot error vs timestamp
+            plot(timestamps,error)
+    
+            % Hold on for next dataset
+            hold on
+    
+            % Legend and axis labels
+            legend show
+            grid on
+            title(title_entries{j})
+            ylabel(yaxis_labels{i})
+            xlabel('time')
+            legend(comparison_names, 'Interpreter','none')
+    
+        end
+    
+    end
+
+    % Title
+    title(tit,{'Error between assuming and not assuming a QS-situation' [ 'Wrenches: ' wrenches_names{i}]})
+
+end
