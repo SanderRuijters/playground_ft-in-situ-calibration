@@ -5,6 +5,11 @@ clear
 close all
 % clc
 
+% Select which plots to plot
+plot_wrenches = true;
+plot_errors = true;
+
+
 %% Collect datasets
 
 % Loop through datasets
@@ -66,102 +71,113 @@ end
 
 %% Plot all wrenches
 
-% Create tiled layout for measured FTs
-fig = figure;
-fig.Position = [0 0 1000 800];
-tiledlayout(3,2);
-
-% Create variable for axis labels
-yaxis_labels = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
-
-% Loop through wrenches
-ft_order = [1 4 2 5 3 6];
-for i = 1:length(ft_order)
-
-    % Plot in next tile
-    nexttile
-
-    % Loop through 4 datasets
-    for j = 1:length(dataset_names)
-
-        % Offset timestamps and save it to variable
-        uncorrected_timestamps = data_to_compare.timestamps.(dataset_names{j});
-        offset_timestamps = uncorrected_timestamps(1);
-        timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
-
-        % Save wrench to variable
-        wrench = data_to_compare.measured.(dataset_names{j})(:,ft_order(i));
-
-        % Plot wrench vs timestamp
-        plot(timestamps,wrench)
-
-        % Hold on for next dataset
-        hold on
-
-        % Legend and axis labels
-        legend show
-        ylabel(yaxis_labels{i})
-        xlabel('time')
-        legend(dataset_names, 'Interpreter','none')
-
-    end
-
-end
-
-close all
-%% Plot errors
-
-% Create variable for axis labels
-yaxis_labels = {'error'; 'error'; 'error'; 'error'; 'error'; 'error'};
-title_entries = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
-
-% Loop through measured and expected
-wrenches_names = fieldnames(errors.(comparison_names{1}));
-wrenches_names = wrenches_names(1:2,:);
-for i = 1:length(wrenches_names)
+% See if it needs to be plotted
+if plot_wrenches
 
     % Create tiled layout for measured FTs
     fig = figure;
     fig.Position = [0 0 1000 800];
-    tit = tiledlayout(3,2);
-
+    tiledlayout(3,2);
+    
+    % Create variable for axis labels
+    yaxis_labels = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
+    
     % Loop through wrenches
     ft_order = [1 4 2 5 3 6];
-    for j = 1:length(ft_order)
+    for i = 1:length(ft_order)
     
         % Plot in next tile
         nexttile
     
-        % Loop through normal and interpolated
-        for k = 1:length(comparison_names)
+        % Loop through 4 datasets
+        for j = 1:length(dataset_names)
     
             % Offset timestamps and save it to variable
-            uncorrected_timestamps = errors.(comparison_names{k}).timestamps;
+            uncorrected_timestamps = data_to_compare.timestamps.(dataset_names{j});
             offset_timestamps = uncorrected_timestamps(1);
             timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
     
-            % Save error to variable
-            error = errors.(comparison_names{k}).(wrenches_names{i})(:,ft_order(j));
+            % Save wrench to variable
+            wrench = data_to_compare.measured.(dataset_names{j})(:,ft_order(i));
     
-            % Plot error vs timestamp
-            plot(timestamps,error)
+            % Plot wrench vs timestamp
+            plot(timestamps,wrench)
     
             % Hold on for next dataset
             hold on
     
             % Legend and axis labels
             legend show
-            grid on
-            title(title_entries{j})
             ylabel(yaxis_labels{i})
             xlabel('time')
-            legend(comparison_names, 'Interpreter','none')
+            legend(dataset_names, 'Interpreter','none')
     
         end
     
     end
 
-    % Title
-    title(tit,{'Error between assuming and not assuming a QS-situation' [ 'Wrenches: ' wrenches_names{i}]})
+end
+
+
+%% Plot errors
+
+% See if it needs to be plotted
+if plot_errors
+    
+    % Create variable for axis labels
+    yaxis_labels = {'error'; 'error'; 'error'; 'error'; 'error'; 'error'};
+    title_entries = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
+    
+    % Loop through measured and expected
+    wrenches_names = fieldnames(errors.(comparison_names{1}));
+    wrenches_names = wrenches_names(1:2,:);
+    for i = 1:length(wrenches_names)
+    
+        % Create tiled layout for measured FTs
+        fig = figure;
+        fig.Position = [0 0 1000 800];
+        tit = tiledlayout(3,2);
+    
+        % Loop through wrenches
+        ft_order = [1 4 2 5 3 6];
+        for j = 1:length(ft_order)
+        
+            % Plot in next tile
+            nexttile
+        
+            % Loop through normal and interpolated
+            for k = 1:length(comparison_names)
+        
+                % Offset timestamps and save it to variable
+                uncorrected_timestamps = errors.(comparison_names{k}).timestamps;
+                offset_timestamps = uncorrected_timestamps(1);
+                timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
+        
+                % Save error to variable
+                error = errors.(comparison_names{k}).(wrenches_names{i})(:,ft_order(j));
+        
+                % Plot error vs timestamp
+                plot(timestamps,error)
+        
+                % Hold on for next dataset
+                hold on
+        
+                % Legend and axis labels
+                legend show
+                grid on
+                title(title_entries{j})
+                ylabel(yaxis_labels{i})
+                xlabel('time')
+                legend(comparison_names, 'Interpreter','none')
+        
+            end
+        
+        end
+    
+        % Title
+        title(tit,{'Error between assuming and not assuming a QS-situation' [ 'Wrenches: ' wrenches_names{i}]})
+    
+    end
 
 end
+
