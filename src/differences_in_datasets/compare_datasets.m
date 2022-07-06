@@ -6,8 +6,8 @@ close all
 % clc
 
 % Select which plots to plot
-plot_wrenches = true;
-plot_errors = true;
+plot_wrenches = false;
+plot_differences = true;
 
 
 %% Collect datasets
@@ -34,7 +34,7 @@ for i = 1:length(dataset_names)
 
 end
 
-%% Compute errors
+%% Compute differences
 
 % Reference indexes and real indexes
 reference_indexes = [1 3];
@@ -54,17 +54,17 @@ for i = 1:length(comparison_names)
     expected_real = data_to_compare.expected.(dataset_names{real_index});
     measured_real = data_to_compare.measured.(dataset_names{real_index});
     
-    % Compute errors
-    expected_error = expected_real - expected_reference;
-    measured_error = measured_real - measured_reference;
+    % Compute differences
+    expected_difference = expected_real - expected_reference;
+    measured_difference = measured_real - measured_reference;
     
     % Save timestamps to variable
     timestamps = data_to_compare.timestamps.(dataset_names{reference_index});
 
-    % Save errors and timestamps to struct
-    errors.(comparison_names{i}).expected = expected_error;
-    errors.(comparison_names{i}).measured = measured_error;
-    errors.(comparison_names{i}).timestamps = timestamps;
+    % Save differences and timestamps to struct
+    differences.(comparison_names{i}).expected = expected_difference;
+    differences.(comparison_names{i}).measured = measured_difference;
+    differences.(comparison_names{i}).timestamps = timestamps;
 
 end
 
@@ -119,24 +119,24 @@ if plot_wrenches
 end
 
 
-%% Plot errors
+%% Plot differences
 
 % See if it needs to be plotted
-if plot_errors
+if plot_differences
     
     % Create variable for axis labels
-    yaxis_labels = {'error'; 'error'; 'error'; 'error'; 'error'; 'error'};
+    yaxis_labels = {'difference'; 'difference'; 'difference'; 'difference'; 'difference'; 'difference'};
     title_entries = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
     
     % Loop through measured and expected
-    wrenches_names = fieldnames(errors.(comparison_names{1}));
+    wrenches_names = fieldnames(differences.(comparison_names{1}));
     wrenches_names = wrenches_names(1:2,:);
     for i = 1:length(wrenches_names)
     
         % Create tiled layout for measured FTs
         fig = figure;
         fig.Position = [0 0 1000 800];
-        tit = tiledlayout(3,2);
+        til = tiledlayout(3,2);
     
         % Loop through wrenches
         ft_order = [1 4 2 5 3 6];
@@ -149,15 +149,15 @@ if plot_errors
             for k = 1:length(comparison_names)
         
                 % Offset timestamps and save it to variable
-                uncorrected_timestamps = errors.(comparison_names{k}).timestamps;
+                uncorrected_timestamps = differences.(comparison_names{k}).timestamps;
                 offset_timestamps = uncorrected_timestamps(1);
                 timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
         
-                % Save error to variable
-                error = errors.(comparison_names{k}).(wrenches_names{i})(:,ft_order(j));
+                % Save difference to variable
+                difference = differences.(comparison_names{k}).(wrenches_names{i})(:,ft_order(j));
         
-                % Plot error vs timestamp
-                plot(timestamps,error)
+                % Plot difference vs timestamp
+                plot(timestamps,difference)
         
                 % Hold on for next dataset
                 hold on
@@ -175,7 +175,7 @@ if plot_errors
         end
     
         % Title
-        title(tit,{'Error between assuming and not assuming a QS-situation' [ 'Wrenches: ' wrenches_names{i}]})
+        title(til,{'Difference between assuming and not assuming a QS-situation' [ 'Wrenches: ' wrenches_names{i}]})
     
     end
 
