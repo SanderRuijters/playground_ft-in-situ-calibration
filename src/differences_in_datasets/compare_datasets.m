@@ -5,15 +5,18 @@ clear
 close all
 % clc
 
-
 %% Collect datasets
 
 % Loop through datasets
-dataset_names = {'TEST_A_parsed'; 'TEST_B_parsed'; 'TEST_C_parsed'; 'TEST_D_parsed'};
+dataset_names = {'TEST_A'; 'TEST_B'; 'TEST_C'; 'TEST_D'};
 for i = 1:length(dataset_names)
 
+    % Save dataset location to variable
+    setsTEST = 'TEST_SETS/';
+    parsed_sets_location = ['../../../DATASETS/' setsTEST];
+
     % Load dataset
-    load(dataset_names{i})
+    load([parsed_sets_location dataset_names{i} '_parsed'])
 
     % Save ft name to variable
     ft_names = fieldnames(dataset.expected_fts);
