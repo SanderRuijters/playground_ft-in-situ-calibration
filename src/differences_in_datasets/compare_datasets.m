@@ -12,8 +12,20 @@ plot_differences = true;
 
 %% Collect datasets
 
+% Define dataset names
+dataset_names = {'TEST_A';...
+    'TEST_B';...
+    'TEST_C';...
+    'TEST_D'};
+dataset_name = 'robot_logger_device_2022_05_04_16_39_15';
+dataset_names = {...
+    [dataset_name '_parsed' '_temperature'];...
+    [dataset_name '_parsed'];...
+    [dataset_name '_nQS_parsed' '_temperature'];...
+    [dataset_name '_nQS_parsed']};
+
+
 % Loop through datasets
-dataset_names = {'TEST_A'; 'TEST_B'; 'TEST_C'; 'TEST_D'};
 for i = 1:length(dataset_names)
 
     % Save dataset location to variable
@@ -21,7 +33,7 @@ for i = 1:length(dataset_names)
     parsed_sets_location = ['../../../DATASETS/' setsTEST];
 
     % Load dataset
-    load([parsed_sets_location dataset_names{i} '_parsed'])
+    load([parsed_sets_location dataset_names{i}])
 
     % Save ft name to variable
     ft_names = fieldnames(dataset.expected_fts);
@@ -41,7 +53,7 @@ reference_indexes = [1 3];
 real_indexes = [2 4];
 
 % Loop through normal and interpolated datasets
-comparison_names = {'normal'; 'interpolated'};
+comparison_names = {'one_and_two'; 'three_and_four'};
 for i = 1:length(comparison_names)
 
     % Save reference values to variable
@@ -131,6 +143,7 @@ if plot_differences
     % Loop through measured and expected
     wrenches_names = fieldnames(differences.(comparison_names{1}));
     wrenches_names = wrenches_names(1:2,:);
+    wrenches_names = wrenches_names(1);
     for i = 1:length(wrenches_names)
     
         % Create tiled layout for measured FTs
