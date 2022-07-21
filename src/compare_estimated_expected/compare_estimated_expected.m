@@ -16,8 +16,8 @@ current_timestamp = datestr(now,'yyyy_mm_dd_HH_MM_SS');
 load('robot_logger_device_2022_05_27_15_14_58_nQS_parsed_temperature.mat')
 
 % Save variables
-estimated_wrenches = dataset.ft_values.l_arm_ft_sensor(:,1);
-expected_wrenches = dataset.expected_fts.l_arm_ft_sensor(:,1);
+estimated_wrenches = dataset.ft_values.l_arm_ft_sensor;
+expected_wrenches = dataset.expected_fts.l_arm_ft_sensor;
 uncorrected_timestamps = dataset.timestamp;
 offset_timestamps = uncorrected_timestamps(1);
 timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_timestamps,1),1);
@@ -25,14 +25,32 @@ timestamps = uncorrected_timestamps - repmat(offset_timestamps,size(uncorrected_
 
 %% Plot
 
-% Plot
-figure
-plot(timestamps,expected_wrenches,timestamps,estimated_wrenches)
-xlabel('Time [s]')
-ylabel('Force [N]')
-title('Performance of workbench calibration')
-legend('Actual', 'Estimated')
-grid on
+% Create tiled layout for measured FTs
+fig = figure;
+fig.Position = [0 0 1000 800];
+til = tiledlayout(3,2);
+yaxis_labels = {'Force [N]'; 'Torque [N.m]'; 'Force [N]'; 'Torque [N.m]'; 'Force [N]'; 'Torque [N.m]'};
+title_entries = {'Fx'; 'Tx'; 'Fy'; 'Ty'; 'Fz'; 'Tz'};
+
+% Loop through wrenches
+ft_order = [1 4 2 5 3 6];
+for i = 1:length(ft_order)
+    
+    % Next tile
+    nexttile
+
+    % Plot
+    plot(timestamps,expected_wrenches(:,ft_order(i)),timestamps,estimated_wrenches(:,ft_order(i)))
+    xlabel('Time [s]')
+    ylabel(yaxis_labels{i})
+    title(title_entries{i})
+    legend('Actual', 'Estimated')
+    grid on
+
+end
+
+% Title
+title(til,'Actual and estimated wrenches')
 
 % Save plot
 if save_plots
